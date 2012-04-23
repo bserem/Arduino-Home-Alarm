@@ -1,0 +1,6 @@
+PS2 Keyboard:
+http://www.pjrc.com/teensy/td_libs_PS2Keyboard.html
+
+NOKIA LCD:
+http://sites.google.com/site/ucorliano/arduino-nokia-lcd
+http://ladyada.net/products/nokia5110/

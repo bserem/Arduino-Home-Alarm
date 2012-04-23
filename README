@@ -1,1 +1,12 @@
-gamato?
+This project aims to become an somewhat fully featured home alarm system
+based on the Arduino (and compatible clones).
+
+We will try to keep it simple and use the arduino UNO instead of the MEGA.
+
+There is no release date, of course.
+Door and window traps must be wired to the arduino (no wireless at the moment, sorry).
+
+If you want to participate drop as a line
+
+Bill -Mandos- Seremetis (http://srm.gr)
+Xaris -Kifinas- Tsimpouris (http://1024.gr)
