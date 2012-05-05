@@ -14,7 +14,7 @@
 // ..[arduino_program]/reference/Define.html
 
 // Digital In & Out (Communication)
-//  (I write from down to top, as to see is like arduino pins)
+//  (I write from down to top, as to see it like arduino pins)
 /*
 #define *************** 14
 #define *************** 13
@@ -36,7 +36,7 @@
 // All Analog In & Out (Zones)
 //  (I write from down to top, as to see is like arduino pins)
 //  probably won't be used anywhere, however it should be clear
-//  to understand how pins are used
+//  ..to understand how pins are used
 #define PIN_ZONE_6      A5
 #define PIN_ZONE_5      A4
 #define PIN_ZONE_4      A3
@@ -165,6 +165,9 @@ boolean check_password(char check_password[PASSWORD_LENGTH], boolean panic_passw
   }
   for(int pos = 0; pos < PASSWORD_LENGTH; pos++) {
     value = EEPROM.read(start_addr + pos);
+    // type casting from (byte)value to (char)value
+    // ..apparently this is not an error, however it should be done
+    // ..for better programming code style
     if (check_password[pos] != (char)value) {
       return false;
     }
@@ -190,7 +193,9 @@ void reprogram_system() {
   // .. save new panic password
   
   // Ask user for cell phone 1
+  // ..store cell phone 1
   // Ask user for cell phone 2
+  // ..store cell phone 2
   
   // Ask user how many zones exist
   
@@ -205,16 +210,26 @@ void reprogram_system() {
   // .. user press 4, screen gets  '1.2.3.-.5.6'
   // .. user press 6, screen gets  '1.2.3.-.5.-'
   // .. user press 4, screen gets  '1.2.3.4.5.-'
-  // user press '*', we lock 12345 zones and ignore zone 6
+  // .. user press '*', we lock 12345 zones and ignore zone 6
   
   // Do the same for ARM_2, and ARM_3
-  
   
   // Message: System is ready
 }
 
 // Test system, by opening and closing everything
 void test_system() {
+  // Not to forget a message before each action!
+  
+  // Set all pixels of screen to black-white-black-white, 3 seconds each
+  // .. to test screen good working status
+  
+  // Try to send sms to cell phone 1
+  // Try to send sms to cell phone 2
+  
+  // Beep 3 times to test beeper good working status
+  // Set alarm for 5 seconds to test alarm siren good working status
+  
   // Check all zones
     // If a zone is open
     // .. beep (keypad beeper, or lcd message - not home siren alarm)
@@ -231,7 +246,7 @@ void test_system() {
 // char term2             : If this key is pressed, funcion will stop and return term2 value
 // char message_pressed[] : Whatever user inputs, it will be stored here
 // int max_keys           : We won't accept more than max_keys as we may step into other variables in memory
-// int timeout            : If we have timeout, we stop and return 0 (it's an acceptable character)
+// int timeout            : If we have timeout, we stop and return 0. Set 0 to disable
 
 // Example 1, password input: (assume all variables already exist)
 // prompt("Please give password\0", true, "Press # to accept or * to cancel", '#', '*', return_value, PASSWORD_LENGTH, 30);
@@ -239,6 +254,51 @@ void test_system() {
 // prompt("Close all doors and windows\0", false, "Press # to test system or * to cancel test", '#', '*', return_value, 0, 30);
 
 char prompt(char prompt_messafe[], boolean mask, char descr_message[], char term1, char term2, char message_pressed[], int max_keys, int timeout) {
+  char in_text[100]; // Apparently 100 is too much
+  int cur_pos, itemp, start_time;
+  char new_char;
   
+  new_char = 0;
+  // ?? start_time = time();
+  while(1) {
+    // If timeout is <= 0, then time out is disabled
+    // ?? if (time() - start_time > timeout && timeout > 0)
+    // ??   break;
+    // ?? lcd.clean(); // Clean screen
+    // ?? lcd.print(prompt_messafe); // print prompt
+    // ?? lcd.print(": ");
+    
+    // To avoid cases where no input is needed
+    if (message_pressed && max_keys > 0) {
+      if (mask == true) {
+        itemp = 0;
+        while(itemp < max_keys && message_pressed[itemp] != 0) {
+          // ?? lcd.print_one_char('*');
+          itemp++;
+        }
+      }
+      else {
+        // ?? lcd.print(message_pressed);
+      }
+    }
+    // ?? lcd.print("\n");
+    
+    // ?? lcd.print(descr_message); // print description
+    // ?? if (keyborad.there_is_availiable_character()) {
+    // ??   new_char = keyboard.get_availiable_character();
+    // ??   if (new_char == term1) // is this terminating character 1?
+    // ??     return term1;
+    // ??   if (new_char == term2) // is this terminating character 2?
+    // ??     return term2;
+    // ??   if (cur_pos + 1 < max_keys) { // + 1 goes for null terminating character
+    // ??     message_pressed[cur_pos] = new_char;
+    // ??     message_pressed[cur_pos + 1] = 0;
+    // ??     cur_pos++;
+    // ??   }
+    // ?? }
+  }
+  
+  // We have time out, just leave
+  return 0;
 }
 
