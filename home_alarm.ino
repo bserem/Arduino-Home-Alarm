@@ -45,55 +45,58 @@
 #define PIN_ZONE_1      A0
 #define ALL_ZONES        6
 
+#define ZONE_CIRCUIT_OPEN    0
+#define ZONE_CIRCUIT_CLOSED  1
+
 // Alarm arm types
-#define ARM_ALL          0
+#define NOT_ARMED        0
 #define ARM_1            1
 #define ARM_2            2
 #define ARM_3            3
+#define ARM_4            4
+#define ARMS_COUNT       4
 
 // Other defines
 #define PASSWORD_LENGTH   4
 #define FACTORY_PASSWORD  {0, 0, 0, 0} // Should be of PASSWORD_LENGTH 
 #define CELL_PHONE_LENGTH 10
 
-// Eeprom adresses
-// ..No other way(?) than hardcoded addresses
-// ..order matters, as each one is calculated from the previous one
-#define ADDR_START              0
-#define ADDR_PASSWORD           ADDR_START + 1
-#define ADDR_PANIC_PASSWORD     ADDR_PASSWORD + PASSWORD_LENGTH * sizeof(char)
-#define CELL_PHONE_1            ADDR_PANIC_PASSWORD + PASSWORD_LENGTH * sizeof(char)  // In case wirh AT commands we can communicate with a cell phone
-#define CELL_PHONE_2            CELL_PHONE_1 + CELL_PHONE_LENGTH * sizeof(char)
-#define ADDR_ARM_ALL_MASK       CELL_PHONE_2 + CELL_PHONE_LENGTH * sizeof(char)       // With one byte we can store zone masks
-#define ADDR_ARM_1_MASK         ADDR_ARM_ALL_MASK + sizeof(byte)                      // ..assuming that zones won't be more than 8
-#define ADDR_ARM_2_MASK         ADDR_ARM_ARM_1_MASK + sizeof(byte)                    // ..and store each zone mask to one bit
-#define ADDR_ARM_3_MASK         ADDR_ARM_ARM_2_MASK + sizeof(byte)
-#define ADDR_ZONES_NC_VOLT      ADDR_ARM_ARM_3_MASK + sizeof(byte)                    // Starting point, helper define for use in for-loops
-#define ADDR_ZONE_1_NC_VOLT     ADDR_ZONES_NC_VOLT
-#define ADDR_ZONE_2_NC_VOLT     ADDR_ZONE_1_NC_VOLT + sizeof(int)
-#define ADDR_ZONE_3_NC_VOLT     ADDR_ZONE_2_NC_VOLT + sizeof(int)
-#define ADDR_ZONE_4_NC_VOLT     ADDR_ZONE_3_NC_VOLT + sizeof(int)
-#define ADDR_ZONE_5_NC_VOLT     ADDR_ZONE_4_NC_VOLT + sizeof(int)
-#define ADDR_ZONE_6_NC_VOLT     ADDR_ZONE_5_NC_VOLT + sizeof(int)
+#define ADDR_START        0
+#define MD5_MAX_NUMBER    65521 // The biggest prime number under unsigned int = 65,535
+
+// Helper structure to load and save everything at once
+struct info_struct_prototype {
+  char password[PASSWORD_LENGTH];
+  char panic_password[PASSWORD_LENGTH];
+  char cell_phone_1[CELL_PHONE_LENGTH];
+  char cell_phone_2[CELL_PHONE_LENGTH];
+  byte arms_mask[ARMS_COUNT];
+  unsigned int zones_nc_volt[ALL_ZONES];
+  unsigned int md5;
+};
 
 // Function prototypes
+
 // Init all nececary libraries or external modules
 void init_libraries();
 // Check given password to eeprom stored one
 boolean check_password(char check_password[PASSWORD_LENGTH], boolean panic_password);
-// Reads zones information from eeprom to memory
-void init_zones();
+// Load all info from memory
+void load_info();
+// Save all info to memory
+void save_info();
 // Reprogram the whole system (pass, zones, ..)
 void reprogram_system();
 // Test system, by opening and closing everything
 void test_system();
 // Prompt user with a message, show keys presses and a description
 char prompt(char prompt_messafe[], boolean mask, char descr_message[], char term1, char term2, char message_pressed[], int max_keys, int timeout);
+// Returns true or false if zone circuit is open
+boolean is_zone_circuit_open();
 // Show message
 // void message();
 
-byte password[ PASSWORD_LENGTH ];
-byte password_panic[ PASSWORD_LENGTH ];
+struct info_struct_prototype info;
 
 int LED = 11;
 int ALARM = 10;
@@ -104,7 +107,7 @@ int pwm_step = 1;
 
 void setup() {
   // init_libraries();
-  // init_zones();
+  load_info();
   
   
   Serial.begin(9600);
@@ -154,30 +157,71 @@ void init_libraries() {
 
 // Check given password to eeprom stored one
 boolean check_password(char check_password[PASSWORD_LENGTH], boolean panic_password) {
-  byte value;
+  char value;
   int start_addr;
   
-  if (panic_password) {
-    start_addr = ADDR_PANIC_PASSWORD;
-  }
-  else {
-    start_addr = ADDR_PASSWORD;
-  }
   for(int pos = 0; pos < PASSWORD_LENGTH; pos++) {
-    value = EEPROM.read(start_addr + pos);
-    // type casting from (byte)value to (char)value
-    // ..apparently this is not an error, however it should be done
-    // ..for better programming code style
-    if (check_password[pos] != (char)value) {
+    if (panic_password) {
+      value = info.panic_password[pos];
+    }
+    else {
+      value = info.password[pos];
+    }
+      
+    if (check_password[pos] != value) {
       return false;
     }
   }
   return true;
 }
 
-// Reads zones information from eeprom to memory
-void init_zones() {
+// Load all info from memory
+void load_info() {
+  // Idea from http://arduino.cc/playground/Code/EEPROMWriteAnything
+  byte* p;
   
+  p = (byte *)(void *)&info;
+  for(int i = 0; i < sizeof(struct info_struct_prototype); i++) {
+    *p++ = EEPROM.read(ADDR_START + i);
+  }
+
+  // data corruption is not allowed!
+  int existing_md5 = info.md5;
+  int new_md5 = 0; 
+  info.md5 = 0;
+  p = (byte *)(void *)&info;
+  for(int i = 0; i < sizeof(struct info_struct_prototype); i++) {
+    new_md5 += (new_md5 + *p++) % MD5_MAX_NUMBER;
+  }
+  info.md5 = existing_md5; // Putting back existing one, not the calculated one (not to forget that this is maybe corrupted)
+  
+  if (new_md5 != existing_md5) {
+    // system is corrupted!
+    // What should we do?
+    // Inform the user? how?
+    reprogram_system(); // Is this correct?
+  }
+  
+}
+
+// Save all info to memory
+void save_info() {
+  // Idea from http://arduino.cc/playground/Code/EEPROMWriteAnything
+  const byte* p;
+  
+  // data corruption is not allowed!
+  info.md5 = 0;
+  int new_md5 = 0;
+  p = (const byte *)(const void *)&info;
+  for(int i = 0; i < sizeof(struct info_struct_prototype); i++) {
+    new_md5 += (new_md5 + *p++) % MD5_MAX_NUMBER;
+  }
+  info.md5 = new_md5;
+  
+  p = (const byte *)(const void *)&info;
+  for(int i = 0; i < sizeof(struct info_struct_prototype); i++) {
+    EEPROM.write(ADDR_START + i, *p++);
+  }
 }
 
 // Reprogram the whole system (pass, zones, ..)
@@ -213,6 +257,9 @@ void reprogram_system() {
   // .. user press '*', we lock 12345 zones and ignore zone 6
   
   // Do the same for ARM_2, and ARM_3
+  
+  // Save the system
+  save_info();
   
   // Message: System is ready
 }
@@ -257,6 +304,7 @@ char prompt(char prompt_messafe[], boolean mask, char descr_message[], char term
   char in_text[100]; // Apparently 100 is too much
   int cur_pos, itemp, start_time;
   char new_char;
+  // Anything starting with '??' is cope and has to be checked and solved
   
   new_char = 0;
   // ?? start_time = time();
@@ -300,5 +348,21 @@ char prompt(char prompt_messafe[], boolean mask, char descr_message[], char term
   
   // We have time out, just leave
   return 0;
+}
+
+// Returns true or false if zone circuit is open
+boolean is_zone_circuit_open(int zone_number) {
+  int circuit_value;
+  switch(zone_number) {
+    case 1: circuit_value = analogRead(PIN_ZONE_1); break;
+    case 2: circuit_value = analogRead(PIN_ZONE_2); break;
+    case 3: circuit_value = analogRead(PIN_ZONE_3); break;
+    case 4: circuit_value = analogRead(PIN_ZONE_4); break;
+    case 5: circuit_value = analogRead(PIN_ZONE_5); break;
+    case 6: circuit_value = analogRead(PIN_ZONE_6); break;
+    default: return true; // Log this somewhere
+  }
+  
+  
 }
 
