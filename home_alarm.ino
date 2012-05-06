@@ -94,8 +94,13 @@ void test_system();
 char prompt(char prompt_messafe[], boolean mask, char descr_message[], char term1, char term2, char message_pressed[], int max_keys, int timeout);
 // Returns true or false if zone circuit is open
 boolean is_zone_circuit_open();
-// Show message
-// void message();
+// Functions for lcd screen
+void lcd_print_string(char * print_string);
+void lcd_clear();
+void lcd_write_char(char c1);
+// Functions for keyboard
+boolean availiable_key();
+char get_key();
 
 struct info_struct_prototype info;
 
@@ -301,11 +306,11 @@ void test_system() {
 // Example 2, accept to test: (assume all variables already exist, here 'return_value' is reduntunt)
 // prompt("Close all doors and windows\0", false, "Press # to test system or * to cancel test", '#', '*', return_value, 0, 30);
 
-char prompt(char prompt_messafe[], boolean mask, char descr_message[], char term1, char term2, char message_pressed[], int max_keys, int timeout) {
+char prompt(char prompt_message[], boolean mask, char descr_message[], char term1, char term2, char message_pressed[], int max_keys, int timeout) {
   char in_text[100]; // Apparently 100 is too much
   int cur_pos, itemp, start_time;
   char new_char;
-  // Anything starting with '??' is cope and has to be checked and solved
+  // Anything starting with '??' is code and has to be checked and solved
   
   new_char = 0;
   // ?? start_time = time();
@@ -313,38 +318,44 @@ char prompt(char prompt_messafe[], boolean mask, char descr_message[], char term
     // If timeout is <= 0, then time out is disabled
     // ?? if (time() - start_time > timeout && timeout > 0)
     // ??   break;
-    // ?? lcd.clean(); // Clean screen
-    // ?? lcd.print(prompt_messafe); // print prompt
-    // ?? lcd.print(": ");
+    
+    // Lcd refresh:
+    // lcd can keep from its own, all screen data.
+    // .. so maybe there is no need to refresh screen
+    // .. but only in case a new key has been pressed,
+    // .. or time out has come.
+    lcd_clear();                      // Clear screen
+    lcd_print_string(prompt_message); // print prompt
+    lcd_print_string(": ");
     
     // To avoid cases where no input is needed
     if (message_pressed && max_keys > 0) {
       if (mask == true) {
         itemp = 0;
         while(itemp < max_keys && message_pressed[itemp] != 0) {
-          // ?? lcd.print_one_char('*');
+          lcd_print_string("*");
           itemp++;
         }
       }
       else {
-        // ?? lcd.print(message_pressed);
+        lcd_print_string(message_pressed);
       }
     }
-    // ?? lcd.print("\n");
+    lcd_print_string("\n");
     
-    // ?? lcd.print(descr_message); // print description
-    // ?? if (keyborad.there_is_availiable_character()) {
-    // ??   new_char = keyboard.get_availiable_character();
-    // ??   if (new_char == term1) // is this terminating character 1?
-    // ??     return term1;
-    // ??   if (new_char == term2) // is this terminating character 2?
-    // ??     return term2;
-    // ??   if (cur_pos + 1 < max_keys) { // + 1 goes for null terminating character
-    // ??     message_pressed[cur_pos] = new_char;
-    // ??     message_pressed[cur_pos + 1] = 0;
-    // ??     cur_pos++;
-    // ??   }
-    // ?? }
+    lcd_print_string(descr_message); // print description
+    if (availiable_key()) {
+      new_char = get_key();
+      if (new_char == term1) // is this terminating character 1?
+        return term1;
+      if (new_char == term2) // is this terminating character 2?
+        return term2;
+      if (cur_pos + 1 < max_keys) { // + 1 goes for null terminating character
+        message_pressed[cur_pos] = new_char;
+        message_pressed[cur_pos + 1] = 0;
+        cur_pos++;
+      }
+    }
   }
   
   // We have time out, just leave
@@ -362,7 +373,7 @@ boolean is_zone_circuit_open(int zone_number) {
     case 4: circuit_value = analogRead(PIN_ZONE_4); break;
     case 5: circuit_value = analogRead(PIN_ZONE_5); break;
     case 6: circuit_value = analogRead(PIN_ZONE_6); break;
-    default: return ZONE_CIRCUIT_OPEN; // Log this somewhere
+    default: return ZONE_CIRCUIT_OPEN; // Log this somewhere?
   }
   
   if (abs(circuit_value - info.zones_nc_volt[zone_number - 1]) > info.open_circuit_volt_threshold[zone_number - 1]) {
@@ -372,4 +383,25 @@ boolean is_zone_circuit_open(int zone_number) {
   return ZONE_CIRCUIT_CLOSED;
 }
 
+void lcd_print_string(char * print_string) {
+  // ??
+}
+
+void lcd_clear() {
+  // ??
+}
+
+void lcd_write_char(char c1) {
+  // ??
+}
+
+boolean availiable_key() {
+  // ??
+  return false;
+}
+
+char get_key() {
+  // ??
+  return 0;
+}
 
