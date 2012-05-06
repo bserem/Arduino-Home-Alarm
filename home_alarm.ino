@@ -45,8 +45,8 @@
 #define PIN_ZONE_1      A0
 #define ALL_ZONES        6
 
-#define ZONE_CIRCUIT_OPEN    0
-#define ZONE_CIRCUIT_CLOSED  1
+#define ZONE_CIRCUIT_OPEN    1
+#define ZONE_CIRCUIT_CLOSED  0
 
 // Alarm arm types
 #define NOT_ARMED        0
@@ -72,6 +72,7 @@ struct info_struct_prototype {
   char cell_phone_2[CELL_PHONE_LENGTH];
   byte arms_mask[ARMS_COUNT];
   unsigned int zones_nc_volt[ALL_ZONES];
+  unsigned int open_circuit_volt_threshold[ALL_ZONES];  
   unsigned int md5;
 };
 
@@ -354,15 +355,21 @@ char prompt(char prompt_messafe[], boolean mask, char descr_message[], char term
 boolean is_zone_circuit_open(int zone_number) {
   int circuit_value;
   switch(zone_number) {
+    // If count of zones changes, we have to add/remove lines here
     case 1: circuit_value = analogRead(PIN_ZONE_1); break;
     case 2: circuit_value = analogRead(PIN_ZONE_2); break;
     case 3: circuit_value = analogRead(PIN_ZONE_3); break;
     case 4: circuit_value = analogRead(PIN_ZONE_4); break;
     case 5: circuit_value = analogRead(PIN_ZONE_5); break;
     case 6: circuit_value = analogRead(PIN_ZONE_6); break;
-    default: return true; // Log this somewhere
+    default: return ZONE_CIRCUIT_OPEN; // Log this somewhere
   }
   
+  if (abs(circuit_value - info.zones_nc_volt[zone_number - 1]) > info.open_circuit_volt_threshold[zone_number - 1]) {
+    return ZONE_CIRCUIT_OPEN;
+  }
   
+  return ZONE_CIRCUIT_CLOSED;
 }
+
 
