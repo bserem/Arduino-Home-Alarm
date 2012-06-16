@@ -7,6 +7,7 @@
 */
 
 #include <EEPROM.h>
+#include <LiquidCrystal.h>
 
 // We try to use defines as much as we can, instead of global variables
 // ..to reduce even more memory footprint, apparently while programm is running
@@ -20,14 +21,15 @@
 #define *************** 13
 #define *************** 12 // KEYPAD BEEPER?
 */
-#define PIN_SERIAL_AT_2 11
-#define PIN_SERIAL_AT_1 10
-#define PIN_ALARM        9
-#define PIN_SCREEN_5     8
-#define PIN_SCREEN_4     7
-#define PIN_SCREEN_3     6
-#define PIN_SCREEN_2     5
-#define PIN_SCREEN_1     4
+#define PIN_SERIAL_AT_2 12
+#define PIN_SERIAL_AT_1 11
+#define PIN_ALARM       10
+#define PIN_LCD_RS       9  // LCD RS
+#define PIN_LCD_ENABLE   8  // LCD Enable
+#define PIN_LCD_D7       7  // LCD D7
+#define PIN_LCD_D6       6  // LCD D6
+#define PIN_LCD_D4       5  // LCD D4
+#define PIN_LCD_D5       4  // LCD D5
 #define PIN_KEYBOARD_1   3
 #define PIN_KEYBOARD_2   2
 #define PIN_SERIAL_RX    1
@@ -60,6 +62,9 @@
 #define PASSWORD_LENGTH   4
 #define FACTORY_PASSWORD  {0, 0, 0, 0} // Should be of PASSWORD_LENGTH 
 #define CELL_PHONE_LENGTH 10
+
+#define LCD_ROWS         20
+#deinfe LCD_COLS          4
 
 #define ADDR_START        0
 #define MD5_MAX_NUMBER    65521 // The biggest prime number under unsigned int = 65,535
@@ -103,6 +108,7 @@ boolean availiable_key();
 char get_key();
 
 struct info_struct_prototype info;
+LiquidCrystal lcd(PIN_LCD_RS, PIN_LCD_ENABLE, PIN_LCD_D4, PIN_LCD_D5, PIN_LCD_D7, PIN_LCD_D6);
 
 int LED = 11;
 int ALARM = 10;
@@ -112,7 +118,7 @@ int pwm_value = 0;
 int pwm_step = 1;
 
 void setup() {
-  // init_libraries();
+  init_libraries();
   load_info();
   
   
@@ -158,7 +164,7 @@ void loop() {
 
 // Init all nececary libraries or external modules
 void init_libraries() {
-  
+  lcd.begin(LCD_ROWS, LCD_COLS);
 }
 
 // Check given password to eeprom stored one
@@ -384,15 +390,15 @@ boolean is_zone_circuit_open(int zone_number) {
 }
 
 void lcd_print_string(char * print_string) {
-  // ??
+  lcd.print(print_string);
 }
 
 void lcd_clear() {
-  // ??
+  lcd.clear();
 }
 
 void lcd_write_char(char c1) {
-  // ??
+  lcd.write(cl);
 }
 
 boolean availiable_key() {
